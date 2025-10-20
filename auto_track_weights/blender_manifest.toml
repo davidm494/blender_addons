@@ -1,0 +1,28 @@
+schema_version = "1.0.0"
+
+id = "auto_track_weights"
+version = "0.2.0"
+name = "Auto Track Weights"
+tagline = "Automatically adjust the weights of tracking markers"
+maintainer = "David Murmann"
+type = "add-on"
+
+website = "https://github.com/davidm494/blender_addons"
+
+# # Optional: tag list defined by Blender and server, see:
+# # https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
+tags = ["Camera", "Tracking"]
+
+blender_version_min = "4.2.0"
+# blender_version_max = "5.1.0"
+
+# License conforming to https://spdx.org/licenses/ (use "SPDX: prefix)
+# https://docs.blender.org/manual/en/dev/advanced/extensions/licenses.html
+license = [
+  "SPDX:GPL-3.0-or-later",
+]
+# # Optional: required by some licenses.
+# copyright = [
+#   "2002-2024 Developer Name",
+#   "1998 Company Name",
+# ]
