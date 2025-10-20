@@ -6,7 +6,7 @@
 
 ## Usage
 
-In the **Movie Clip Editor** select some or all tracking markers. The default shortcut is ALT+W (for weights), alternatively there is a **Set Track Weights** button in the **Track** tab of the sidebar. After running the operator you can adjust the **Falloff Frames** in the operator properties.
+In the **Movie Clip Editor** select some or all tracking markers. The default shortcut is ALT+W (for weights), alternatively there is a **Set Track Weights** button in the **Track** tab of the sidebar. After running the operator, you can adjust the **Falloff Frames** in the operator properties.
 
 ---
 
