@@ -84,14 +84,8 @@ def process_markers_in_track(track, falloff_frames):
 
 
 def process_tracks_in_clip(clip, falloff_frames):
-    # camera track
-    tracks = list(clip.tracking.tracks)
-
-    # object tracks
-    for obj in clip.tracking.objects:
-        tracks.extend(obj.tracks)
-
-    for track in tracks:
+    # only process the active tracking object
+    for track in clip.tracking.objects.active.tracks:
         # only change selected and visible tracks
         if not track.select or track.hide:
             continue
