@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "auto_track_weights"
-version = "0.2.0"
+version = "0.2.1"
 name = "Auto Track Weights"
 tagline = "Automatically adjust the weights of tracking markers"
 maintainer = "David Murmann"
