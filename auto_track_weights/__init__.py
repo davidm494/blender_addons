@@ -14,6 +14,23 @@ bl_info = {
 import bpy
 from bpy.types import Operator, Panel
 
+def clear_animation_data_property(obj, prop):
+    animation_data = obj.id_data.animation_data
+    action = animation_data and animation_data.action
+    if not action:
+        return
+    data_path = obj.path_from_id(prop)
+    if bpy.app.version < (5, 0, 0):
+        to_remove = [fc for fc in action.fcurves if fc.data_path == data_path]
+        for fc in to_remove:
+            action.fcurves.remove(fc)
+    else:
+        from bpy_extras import anim_utils
+        action_slot = animation_data.action_slot
+        channelbag = anim_utils.action_get_channelbag_for_slot(action, action_slot)
+        to_remove = [fc for fc in channelbag.fcurves if fc.data_path == data_path]
+        for fc in to_remove:
+            channelbag.fcurves.remove(fc)
 
 def process_markers_in_track(track, falloff_frames):
     t = track
@@ -24,13 +41,7 @@ def process_markers_in_track(track, falloff_frames):
         return
 
     # clear any previous animation curve on track.weight
-    animation_data = t.id_data.animation_data
-    action = animation_data and animation_data.action
-    data_path = t.path_from_id('weight')
-    if action:
-        to_remove = [fc for fc in action.fcurves if fc.data_path == data_path]
-        for fc in to_remove:
-            action.fcurves.remove(fc)
+    clear_animation_data_property(t, 'weight')
 
     min_frame = -(2**30)
     max_frame = 2**30
