@@ -129,7 +129,7 @@ def _serialize_nodes(nodes, default_nodes):
         paired_output = getattr(node, "paired_output", None)
         if paired_output is not None:
             node_dict["paired_output"] = node.paired_output.name
-        
+
         is_reroute = (node.bl_idname == "NodeReroute")
         node_dict["props"] = _iter_properties(node, default_node, skip_props={
             # Don't include these, because they are stored differently
@@ -592,7 +592,7 @@ class NODE_OT_clipboard_copy_json(Operator):
             )
         ))
         return {'FINISHED'}
-    
+
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "include_groups")
