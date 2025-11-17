@@ -6,6 +6,7 @@ import collections
 import json
 import numpy
 
+JSON_OUTPUT_VERSION = 1
 
 _message = "Copy/Paste Nodes JSON export (https://extensions.blender.org/add-ons/copy-paste-nodes/)"
 
@@ -226,6 +227,7 @@ def nodes_to_dict(nodes, include_groups=True):
         trees, all_nodes = _collect_trees(nodes)
     else:
         trees, all_nodes = [], nodes
+    tree_type = nodes[0].id_data.type
 
     node_types = set()
     for node in all_nodes:
@@ -256,7 +258,7 @@ def nodes_to_dict(nodes, include_groups=True):
             if out_node:
                 node.pair_with_output(out_node)
 
-    result = {}
+    result = {"version": JSON_OUTPUT_VERSION, "type": tree_type}
     try:
         result["nodes"] = _serialize_nodes(nodes, default_nodes)
         trees_dict = {}
@@ -458,8 +460,14 @@ def dict_to_nodes(target_tree, target_location, nodes_dict, reuse_existing=True)
     trees = {}
     raw_trees = nodes_dict.get("node_trees", {})
     for name, td in raw_trees.items():
+        # Try to find existing node group
         node_group = bpy.data.node_groups.get(name)
-        if not reuse_existing or not node_group or not _has_equal_interface(td, node_group):
+        # Or recreate the node group on these conditions
+        if (not reuse_existing or
+            not node_group or
+            not nodes_dict["type"] == node_group.type or
+            not _has_equal_interface(td, node_group)):
+
             node_group = bpy.data.node_groups.new(name, target_tree.bl_idname)
             for k, v in td.get("props", {}).items():
                 k = _long_prop_name(k)
