@@ -11,7 +11,7 @@ website = "https://github.com/davidm494/blender_addons"
 
 # Optional list defined by Blender and server, see:
 # https://docs.blender.org/manual/en/dev/advanced/extensions/tags.html
-tags = ["Node", "Import-Export", "Material", "Geometry Nodes", "Compositing"]
+tags = ["Node"]
 
 blender_version_min = "4.5.0"
 # # Optional: Blender version that the extension does not support, earlier versions are supported.
