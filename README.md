@@ -9,22 +9,25 @@ The preferred method for installation is via the [Blender Extensions](https://ex
 
 # Copy Paste Nodes
 
-**Copy Paste Nodes** allows to copy and paste nodes in all node editors as JSON text. Some of the possible usecases are:
+**Copy/Paste Nodes** allows to copy and paste nodes in all node editors as JSON text. Some of the possible usecases are:
 
-- copy between different open blender instances and versions
-- share node trees online, without rebuilding from screenshots, where .blend files are not easy to share
-- check changes between node tree versions by comparing the difference in the JSON output
-
-NOTE: The structure of the generated JSON is NOT finalized, this should be considered in an alpha state. I hope to gather feedback on the exact fields that are necessary for the serialization to be useful.
-
-The code tries to keep the generated JSON short, only keeping fields that are not default. This results in almost human-readable output, but it is very easy to trigger exceptions if this output is edited by hand. Quite a bit more error checking should be done in future versions.
-
-The stored structure and property names are mostly mirroring the internal structure of the node trees. One exception is that `default_value` and `location_absolute` have been renamed to `_val` and `_loc`. They occur in almost every node, and the long names make the output much more verbose and the actual useful information less readable.
+- Copy between different open blender instances and versions
+- Share node trees online, without rebuilding from screenshots, where .blend files are not easy to share
+- Check changes between node tree versions by comparing the difference in the JSON output
 
 ## Usage
 
 Two new keyboard shortcuts are added in all **Node Editors**: CTRL+ALT+C and CTRL+ALT+V (CMD on macos). These will copy/paste nodes as text to the system clipboard instead of the internal clipboard used by CTRL+C/CTRL+V.
 
+---
+
+**NOTE:** The structure of the generated JSON is NOT finalized, this should be considered in an alpha state. I hope to gather feedback on the exact fields that are necessary for the serialization to be useful.
+
+The code tries to keep the generated JSON short, only keeping fields that are not default. This results in almost human-readable output, but it is very easy to trigger exceptions if this output is edited by hand. Quite a bit more error checking should be done in future versions.
+
+The stored structure and property names are mostly mirroring the internal structure of the node trees. One exception is that `default_value` and `location_absolute` have been renamed to `_val` and `_loc`. They occur in almost every node, and the long names make the output much more verbose and the actual useful information less readable.
+
+---
 
 # Auto Track Weights
 
