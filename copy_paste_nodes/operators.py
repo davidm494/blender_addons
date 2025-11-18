@@ -6,9 +6,106 @@ import collections
 import json
 import numpy
 
-JSON_OUTPUT_VERSION = 1
+JSON_SCHEMA_VERSION = 1
 
 _message = "Copy/Paste Nodes JSON export (https://extensions.blender.org/add-ons/copy-paste-nodes/)"
+
+
+# Simple declarative schema that serves as documentation and basic checking of valid JSON.
+# This will not check everything, as we want to be compatible with future blender additions
+# of new properties, but should catch most things that would stop us from producing any
+# useful output when loading from JSON.
+
+class Optional:
+    def __init__(self, key):
+        self.key = key
+    def __repr__(self):
+        return f'Optional("{self.key}")'
+
+class MapOf:
+    def __init__(self, value_schema):
+        self.value_schema = value_schema
+    def __repr__(self):
+        return f'MapOf({self.value_schema!r})'
+
+_NODES_SCHEMA = [
+    {
+        "bl_idname": str,
+        "props": {"name": str},
+        Optional("node_tree"): str,
+        Optional("parent"): str,
+        Optional("paired_output"): str,
+        Optional("inputs"): MapOf({Optional("hide"): bool, Optional("links"): [(str, int)]}),
+        Optional("outputs"): MapOf({Optional("hide"): bool}),
+    },
+]
+
+SCHEMA = {
+    "version": int,
+    "type": str,
+    "nodes": _NODES_SCHEMA,
+
+    Optional("node_trees"): MapOf({
+        "nodes": _NODES_SCHEMA,
+        "interface": {
+            Optional("items_tree"): [{Optional("in_out"): str}],
+        },
+        Optional("props"): {},
+    }),
+}
+
+def validate_schema(obj, schema, path="root"):
+    """
+    Recursively validate obj against the schema. Only fields listed in the
+    schema are checked, any other fields are ignored.
+    Raises TypeError if a type mismatch or missing required key is found.
+    """
+    if isinstance(schema, type):
+        if not isinstance(obj, schema):
+            raise TypeError(f"{path} expected {schema.__name__}, got {type(obj).__name__}")
+        return
+
+    if isinstance(schema, list):
+        if not isinstance(obj, list):
+            raise TypeError(f"{path} expected list, got {type(obj).__name__}")
+        if not schema:
+            return
+        for i, item in enumerate(obj):
+            validate_schema(item, schema[0], path=f"{path}[{i}]")
+        return
+
+    if isinstance(schema, dict):
+        if not isinstance(obj, dict):
+            raise TypeError(f"{path} expected dict, got {type(obj).__name__}")
+
+        for key, subschema in schema.items():
+            if isinstance(key, Optional):
+                key_name = key.key
+                if key_name in obj:
+                    validate_schema(obj[key_name], subschema, path=f"{path}.{key_name}")
+            else:
+                if key not in obj:
+                    raise TypeError(f"{path} missing required key '{key}'")
+                validate_schema(obj[key], subschema, path=f"{path}.{key}")
+        return
+
+    if isinstance(schema, tuple):
+        if not isinstance(obj, (tuple, list)):
+            raise TypeError(f"{path} expected tuple/list of length {len(schema)}, got {type(obj).__name__}")
+        if len(obj) != len(schema):
+            raise TypeError(f"{path} expected tuple/list of length {len(schema)}, got length {len(obj)}")
+        for i, (item, subschema) in enumerate(zip(obj, schema)):
+            validate_schema(item, subschema, path=f"{path}[{i}]")
+        return
+
+    if isinstance(schema, MapOf):
+        if not isinstance(obj, dict):
+            raise TypeError(f"{path} expected dict, got {type(obj).__name__}")
+        for k, v in obj.items():
+            validate_schema(v, schema.value_schema, path=f"{path}.{k}")
+        return
+
+    raise TypeError(f"{path} invalid schema type {type(schema)}")
 
 _bpy_type_to_data_collection = {}
 def _get_data_collection(id_type):
@@ -258,7 +355,7 @@ def nodes_to_dict(nodes, include_groups=True):
             if out_node:
                 node.pair_with_output(out_node)
 
-    result = {"version": JSON_OUTPUT_VERSION, "type": tree_type}
+    result = {"version": JSON_SCHEMA_VERSION, "type": tree_type}
     try:
         result["nodes"] = _serialize_nodes(nodes, default_nodes)
         trees_dict = {}
@@ -543,8 +640,10 @@ def dict_to_nodes(target_tree, target_location, nodes_dict, reuse_existing=True)
 
 
 def _json_dumps_compact(obj, indent=2, max_inline=90):
-    """A version of json.dumps that defaults to pretty-printing with indents, but
-    tries to keep elements on the same line if they are short"""
+    """
+    A version of json.dumps that defaults to pretty-printing with indents, but
+    tries to keep elements on the same line if they are short
+    """
     def render(x, level=0):
         space = " " * (indent * level)
         space_inner = " " * (indent * (level + 1))
@@ -633,6 +732,11 @@ class NODE_OT_clipboard_paste_json(Operator):
             nodes_dict = json.loads('\n'.join(lines))
         except json.JSONDecodeError as e:
             self.report({'ERROR'}, f"The clipboard could not be decoded as JSON: {e}")
+            return {'CANCELLED'}
+        try:
+            validate_schema(nodes_dict, SCHEMA)
+        except TypeError as e:
+            self.report({'ERROR'}, f"Schema error in JSON: {e}")
             return {'CANCELLED'}
         for n in context.space_data.edit_tree.nodes:
             n.select = False
