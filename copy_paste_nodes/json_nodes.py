@@ -516,7 +516,7 @@ def _create_nodes(target_tree, location_offset, nodes, trees, raw_trees):
                 # Sort "socket_type" to the front, so that any type change happens first
                 for k, v in sorted(sd.items(), key=lambda x: x[0] != "socket_type"):
                     k = _long_prop_name(k)
-                    if k == "links":
+                    if k in ("name", "links"):
                         continue
                     _set_prop_on_idblock(socket, k, v)
 
