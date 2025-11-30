@@ -13,12 +13,13 @@
 
 _needs_reload = 'operators' in locals()
 
-from . import operators, gui
+from . import operators, gui, json_nodes
 
 if _needs_reload:
     import importlib
     importlib.reload(operators)
     importlib.reload(gui)
+    importlib.reload(json_nodes)
 
 def register():
     operators.register()
