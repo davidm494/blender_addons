@@ -242,6 +242,9 @@ def _serialize_nodes(nodes, default_nodes):
             "active_main_index",
         } | ({"width"} if is_reroute else set()), always_include={"name"})
 
+        if hasattr(node, "mapping"):
+            node_dict["mapping"] = _iter_properties(node.mapping, default_node.mapping)
+
         for socket_dir in ("inputs", "outputs"):
             sockets = {}
             for i, socket in enumerate(getattr(node, socket_dir)):
@@ -416,6 +419,61 @@ def _set_prop_on_idblock(idblock, identifier, value):
     else:
         setattr(idblock, identifier, value)
 
+def _set_properties(idblock, prop_dict, location_offset=None):
+    for k, v in prop_dict.items():
+        k = _long_prop_name(k)
+        prop = idblock.bl_rna.properties.get(k)
+        if not prop.is_readonly:
+            if location_offset is not None and k == "location_absolute":
+                v = [v[0] + location_offset[0], v[1] + location_offset[1]]
+            _set_prop_on_idblock(idblock, k, v)
+        elif prop.type == 'COLLECTION':
+            collection = getattr(idblock, k)
+            if hasattr(collection, "new"):
+                new_params = collection.bl_rna.functions['new'].parameters
+                if hasattr(collection, "clear"):
+                    collection.clear()
+                for i, item in enumerate(v):
+                    used_keys = set()
+                    if i >= len(collection):
+                        params = []
+                        # Match properties to constructor parameters
+                        for p in new_params:
+                            # NodeGeometryCaptureAttributeItems.new accepts a socket type,
+                            # but NodeGeometryCaptureAttributeItem stores an attribute type
+                            # (TODO: is this an API bug?)
+                            if (collection.bl_rna.identifier == "NodeGeometryCaptureAttributeItems"
+                                and p.identifier == "socket_type"):
+                                key = "data_type"
+                                np = _map_attribute_to_socket_type(item.get(key))
+                            elif collection.bl_rna.identifier == "CurveMapPoints":
+                                if p.identifier == "position":
+                                    key = "location"
+                                    np = item.get(key)[0]
+                                elif p.identifier == "value":
+                                    key = "location"
+                                    np = item.get(key)[1]
+                                else:
+                                    np = None
+                            else:
+                                key = p.identifier
+                                np = item.get(key)
+                            if not np:
+                                break
+                            params.append(np)
+                            used_keys.add(key)
+
+                        obj = collection.new(*params)
+                    else:
+                        obj = collection[i]
+                    # Set all properties not set by the constructor
+                    for key, value in item.items():
+                        if key not in used_keys:
+                            setattr(obj, key, value)
+            else:
+                for i, item in enumerate(v):
+                    _set_properties(collection[i], item)
+
 def _create_nodes(target_tree, location_offset, nodes, trees, raw_trees):
     created = {}
     for nd in nodes:
@@ -444,42 +502,10 @@ def _create_nodes(target_tree, location_offset, nodes, trees, raw_trees):
             if out_node:
                 node.pair_with_output(out_node)
 
-        for k, v in nd.get("props", {}).items():
-            k = _long_prop_name(k)
-            prop = node.bl_rna.properties.get(k)
-            if not prop.is_readonly:
-                if k == "location_absolute":
-                    v = [v[0] + location_offset[0], v[1] + location_offset[1]]
-                _set_prop_on_idblock(node, k, v)
-            elif prop.type == 'COLLECTION':
-                collection = getattr(node, k)
-                new_params = collection.bl_rna.functions['new'].parameters
-                collection.clear()
-                for item in v:
-                    params = []
-                    used_keys = set()
-                    # Match properties to constructor parameters
-                    for p in new_params:
-                        # NodeGeometryCaptureAttributeItems.new accepts a socket type,
-                        # but NodeGeometryCaptureAttributeItem stores an attribute type
-                        # (TODO: is this an API bug?)
-                        if (collection.bl_rna.identifier == "NodeGeometryCaptureAttributeItems"
-                            and p.identifier == "socket_type"):
-                            key = "data_type"
-                            np = _map_attribute_to_socket_type(item.get(key))
-                        else:
-                            key = p.identifier
-                            np = item.get(key)
-                        if not np:
-                            break
-                        params.append(np)
-                        used_keys.add(key)
+        _set_properties(node, nd.get("props", {}), location_offset)
 
-                    obj = collection.new(*params)
-                    # Set all properties not set by the constructor
-                    for key, value in item.items():
-                        if key not in used_keys:
-                            setattr(obj, key, value)
+        if hasattr(node, "mapping"):
+            _set_properties(node.mapping, nd.get("mapping", {}))
 
     def _iterate_sockets(node, nd, key):
         for i, sd in nd.get(key, {}).items():
