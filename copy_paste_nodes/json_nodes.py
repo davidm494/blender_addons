@@ -39,7 +39,6 @@ _NODES_SCHEMA = [
 SCHEMA = {
     "version": int,
     "type": str,
-    "app_version": (int, int, int),
     "nodes": _NODES_SCHEMA,
 
     Optional("node_trees"): MapOf({
