@@ -242,8 +242,9 @@ def _serialize_nodes(nodes, default_nodes):
             "active_main_index",
         } | ({"width"} if is_reroute else set()), always_include={"name"})
 
-        if hasattr(node, "mapping"):
-            node_dict["mapping"] = _iter_properties(node.mapping, default_node.mapping)
+        for special in ("mapping", "color_ramp"):
+            if hasattr(node, special):
+                node_dict[special] = _iter_properties(getattr(node, special), getattr(default_node, special))
 
         for socket_dir in ("inputs", "outputs"):
             sockets = {}
@@ -504,8 +505,9 @@ def _create_nodes(target_tree, location_offset, nodes, trees, raw_trees):
 
         _set_properties(node, nd.get("props", {}), location_offset)
 
-        if hasattr(node, "mapping"):
-            _set_properties(node.mapping, nd.get("mapping", {}))
+        for special in ("mapping", "color_ramp"):
+            if hasattr(node, special):
+                _set_properties(getattr(node, special), nd.get(special, {}))
 
     def _iterate_sockets(node, nd, key):
         for i, sd in nd.get(key, {}).items():
