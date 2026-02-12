@@ -459,7 +459,7 @@ def _set_properties(idblock, prop_dict, location_offset=None):
                             else:
                                 key = p.identifier
                                 np = item.get(key)
-                            if not np:
+                            if np is None:
                                 break
                             params.append(np)
                             used_keys.add(key)
@@ -522,7 +522,8 @@ def _create_nodes(target_tree, location_offset, nodes, trees, raw_trees):
     # Create links
     for nd, node in created.values():
         for sd, from_socket in _iterate_sockets(node, nd, "inputs"):
-            for from_name, socket_index in sd.get("links", ()):
+            # create the links in reverse, so that multi-input sockets stay in the correct order
+            for from_name, socket_index in reversed(sd.get("links", ())):
                 other = created.get(from_name)
                 if other is None:
                     continue
