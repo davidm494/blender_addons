@@ -125,7 +125,7 @@ def _to_serializable(val):
         return [_to_serializable(v) for v in val]
     if isinstance(val, float):
         # Blender float properties are single precision, so round to the nearest float32
-        return float(repr(numpy.float32(val)))
+        return float(str(numpy.float32(val)))
     if isinstance(val, (int, bool, str)) or val is None:
         return val
     # Fallback: stringify
